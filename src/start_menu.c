@@ -374,7 +374,7 @@ void Task_StartMenuHandleInput(u8 taskId)
     {
     case 0:
         if (InUnionRoom() == TRUE)
-            SetUsingUnionRoomStartMenu();
+            var_800D_set_xB();
         sStartMenuCallback = StartCB_HandleInput;
         data[0]++;
         break;

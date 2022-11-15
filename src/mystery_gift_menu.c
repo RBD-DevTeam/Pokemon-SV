@@ -354,7 +354,7 @@ void vblankcb_mystery_gift_e_reader_run(void)
     TransferPlttBuffer();
 }
 
-void CB2_MysteryGiftEReader(void)
+void c2_mystery_gift_e_reader_run(void)
 {
     RunTasks();
     RunTextPrinters();
@@ -434,7 +434,7 @@ void c2_mystery_gift(void)
 {
     if (HandleMysteryGiftOrEReaderSetup(0))
     {
-        SetMainCallback2(CB2_MysteryGiftEReader);
+        SetMainCallback2(c2_mystery_gift_e_reader_run);
         gGiftIsFromEReader = FALSE;
         task_add_00_mystery_gift();
     }
@@ -444,7 +444,7 @@ void c2_ereader(void)
 {
     if (HandleMysteryGiftOrEReaderSetup(1))
     {
-        SetMainCallback2(CB2_MysteryGiftEReader);
+        SetMainCallback2(c2_mystery_gift_e_reader_run);
         gGiftIsFromEReader = TRUE;
         task_add_00_ereader();
     }
@@ -540,7 +540,7 @@ void ClearTextWindow(void)
     CopyWindowToVram(1, COPYWIN_MAP);
 }
 
-bool32 PrintMysteryGiftMenuMessage(u8 *textState, const u8 *str)
+bool32 MG_PrintTextOnWindow1AndWaitButton(u8 *textState, const u8 *str)
 {
     switch (*textState)
     {
@@ -650,7 +650,7 @@ u32 MysteryGift_HandleThreeOptionMenu(u8 * unused0, u16 * unused1, u8 whichMenu)
     return response;
 }
 
-s8 DoMysteryGiftYesNo(u8 * textState, u16 * windowId, bool8 yesNoBoxPlacement, const u8 * str)
+s8 mevent_message_print_and_prompt_yes_no(u8 * textState, u16 * windowId, bool8 yesNoBoxPlacement, const u8 * str)
 {
     struct WindowTemplate windowTemplate;
     s8 input;
@@ -878,17 +878,25 @@ bool32 TearDownCardOrNews_ReturnToTopMenu(bool32 cardOrNews, bool32 arg1)
 s32 mevent_message_prompt_discard(u8 * textState, u16 * windowId, bool32 cardOrNews)
 {
     if (cardOrNews == 0)
-        return DoMysteryGiftYesNo(textState, windowId, TRUE, gText_IfThrowAwayCardEventWontHappen);
+    {
+        return mevent_message_print_and_prompt_yes_no(textState, windowId, TRUE, gText_IfThrowAwayCardEventWontHappen);
+    }
     else
-        return DoMysteryGiftYesNo(textState, windowId, TRUE, gText_OkayToDiscardNews);
+    {
+        return mevent_message_print_and_prompt_yes_no(textState, windowId, TRUE, gText_OkayToDiscardNews);
+    }
 }
 
 bool32 mevent_message_was_thrown_away(u8 * textState, bool32 cardOrNews)
 {
     if (cardOrNews == 0)
-        return PrintMysteryGiftMenuMessage(textState, gText_WonderCardThrownAway);
+    {
+        return MG_PrintTextOnWindow1AndWaitButton(textState, gText_WonderCardThrownAway);
+    }
     else
-        return PrintMysteryGiftMenuMessage(textState, gText_WonderNewsThrownAway);
+    {
+        return MG_PrintTextOnWindow1AndWaitButton(textState, gText_WonderNewsThrownAway);
+    }
 }
 
 bool32 mevent_save_game(u8 * state)
@@ -1090,7 +1098,7 @@ static bool32 PrintMGSendStatus(u8 * state, u16 * arg1, u8 arg2, u32 msgId)
     }
     else
     {
-        return PrintMysteryGiftMenuMessage(state, str);
+        return MG_PrintTextOnWindow1AndWaitButton(state, str);
     }
 }
 
@@ -1157,7 +1165,7 @@ void task00_mystery_gift(u8 taskId)
     {
         if (data->IsCardOrNews == 0)
         {
-            if (PrintMysteryGiftMenuMessage(&data->textState, gText_DontHaveCardNewOneInput))
+            if (MG_PrintTextOnWindow1AndWaitButton(&data->textState, gText_DontHaveCardNewOneInput))
             {
                 data->state = 3;
                 PrintMysteryGiftOrEReaderTopMenu(0, 1);
@@ -1165,7 +1173,7 @@ void task00_mystery_gift(u8 taskId)
         }
         else
         {
-            if (PrintMysteryGiftMenuMessage(&data->textState, gText_DontHaveNewsNewOneInput))
+            if (MG_PrintTextOnWindow1AndWaitButton(&data->textState, gText_DontHaveNewsNewOneInput))
             {
                 data->state = 3;
                 PrintMysteryGiftOrEReaderTopMenu(0, 1);
@@ -1220,15 +1228,23 @@ void task00_mystery_gift(u8 taskId)
         {
         case 0:
             if (data->source == 1)
-                CreateTask_LinkMysteryGiftWithFriend(ACTIVITY_WONDER_CARD);
+            {
+                MEvent_CreateTask_CardOrNewsWithFriend(ACTIVITY_WCARD2);
+            }
             else if (data->source == 0)
-                CreateTask_LinkMysteryGiftOverWireless(ACTIVITY_WONDER_CARD);
+            {
+                MEvent_CreateTask_CardOrNewsOverWireless(ACTIVITY_WCARD2);
+            }
             break;
         case 1:
             if (data->source == 1)
-                CreateTask_LinkMysteryGiftWithFriend(ACTIVITY_WONDER_NEWS);
+            {
+                MEvent_CreateTask_CardOrNewsWithFriend(ACTIVITY_WNEWS2);
+            }
             else if (data->source == 0)
-                CreateTask_LinkMysteryGiftOverWireless(ACTIVITY_WONDER_NEWS);
+            {
+                MEvent_CreateTask_CardOrNewsOverWireless(ACTIVITY_WNEWS2);
+            }
             break;
         }
         data->state = 6;
@@ -1275,7 +1291,7 @@ void task00_mystery_gift(u8 taskId)
         }
         break;
     case  9:
-        flag = DoMysteryGiftYesNo(&data->textState, &data->curPromptWindowId, FALSE, mevent_client_get_buffer());
+        flag = mevent_message_print_and_prompt_yes_no(&data->textState, &data->curPromptWindowId, FALSE, mevent_client_get_buffer());
         switch (flag)
         {
         case 0:
@@ -1296,14 +1312,14 @@ void task00_mystery_gift(u8 taskId)
         }
         break;
     case 10:
-        if (PrintMysteryGiftMenuMessage(&data->textState, mevent_client_get_buffer()))
+        if (MG_PrintTextOnWindow1AndWaitButton(&data->textState, mevent_client_get_buffer()))
         {
             mevent_client_inc_flag();
             data->state = 7;
         }
         break;
     case 11:
-        flag = DoMysteryGiftYesNo(&data->textState, &data->curPromptWindowId, FALSE, gText_ThrowAwayWonderCard);
+        flag = mevent_message_print_and_prompt_yes_no(&data->textState, &data->curPromptWindowId, FALSE, gText_ThrowAwayWonderCard);
         switch (flag)
         {
         case 0:
@@ -1331,7 +1347,7 @@ void task00_mystery_gift(u8 taskId)
         }
         break;
     case 12:
-        flag = DoMysteryGiftYesNo(&data->textState, &data->curPromptWindowId, FALSE, gText_HaventReceivedCardsGift);
+        flag = mevent_message_print_and_prompt_yes_no(&data->textState, &data->curPromptWindowId, FALSE, gText_HaventReceivedCardsGift);
         switch (flag)
         {
         case 0:
@@ -1371,12 +1387,17 @@ void task00_mystery_gift(u8 taskId)
     case 15:
         r1 = mevent_message(&sp0, data->IsCardOrNews, data->source, data->prevPromptWindowId);
         if (r1 == NULL)
+        {
             r1 = data->buffer;
+        }
         if (sp0)
+        {
             flag = PrintMGSuccessMessage(&data->textState, r1, &data->curPromptWindowId);
+        }
         else
-            flag = PrintMysteryGiftMenuMessage(&data->textState, r1);
-
+        {
+            flag = MG_PrintTextOnWindow1AndWaitButton(&data->textState, r1);
+        }
         if (flag)
         {
             if (data->prevPromptWindowId == 3)
@@ -1402,7 +1423,7 @@ void task00_mystery_gift(u8 taskId)
         }
         break;
     case 16:
-        if (PrintMysteryGiftMenuMessage(&data->textState, gText_CommunicationError))
+        if (MG_PrintTextOnWindow1AndWaitButton(&data->textState, gText_CommunicationError))
         {
             data->state = 0;
             PrintMysteryGiftOrEReaderTopMenu(0, 0);
@@ -1515,7 +1536,7 @@ void task00_mystery_gift(u8 taskId)
         }
         break;
     case 23:
-        switch ((u32)DoMysteryGiftYesNo(&data->textState, &data->curPromptWindowId, TRUE, gText_HaventReceivedGiftOkayToDiscard))
+        switch ((u32)mevent_message_print_and_prompt_yes_no(&data->textState, &data->curPromptWindowId, TRUE, gText_HaventReceivedGiftOkayToDiscard))
         {
         case 0:
             data->state = 24;
@@ -1566,10 +1587,10 @@ void task00_mystery_gift(u8 taskId)
             switch (data->IsCardOrNews)
             {
             case 0:
-                CreateTask_SendMysteryGift(ACTIVITY_WONDER_CARD);
+                MEvent_CreateTask_Leader(ACTIVITY_WCARD2);
                 break;
             case 1:
-                CreateTask_SendMysteryGift(ACTIVITY_WONDER_NEWS);
+                MEvent_CreateTask_Leader(ACTIVITY_WNEWS2);
                 break;
             }
             data->source = 1;
@@ -1639,7 +1660,7 @@ void task00_mystery_gift(u8 taskId)
         }
         break;
     case 36:
-        if (PrintMysteryGiftMenuMessage(&data->textState, gText_CommunicationError))
+        if (MG_PrintTextOnWindow1AndWaitButton(&data->textState, gText_CommunicationError))
         {
             data->state = 0;
             PrintMysteryGiftOrEReaderTopMenu(0, 0);
